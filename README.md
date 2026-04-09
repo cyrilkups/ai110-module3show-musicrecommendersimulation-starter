@@ -117,38 +117,45 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+I stress-tested the recommender with four profiles: `High-Energy Pop`, `Chill Lofi`, `Deep Intense Rock`, and a `Conflicted Edge Case` that asked for classical music, intense mood, very high energy, and acoustic texture all at once. The first three profiles mostly matched my musical intuition. For example, `Library Rain` and `Midnight Coding` felt like strong top picks for the chill lofi profile because they match both the labels and the softer energy target.
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+One useful surprise was how often `Gym Hero` stayed near the top. It ranks well for intense listeners because it is very high energy and has an `intense` mood, even though it is labeled `pop`. That makes sense mathematically, but it also shows that the system can prefer a strong energy match over a more specific genre identity.
+
+I also ran a weight-shift experiment where I halved the genre weight and doubled the energy weight. That moved `Rooftop Lights` above `Gym Hero` for the high-energy pop profile. The result felt a little closer to a bright, upbeat "happy pop" vibe, but it also made the recommender less loyal to the user's exact genre label.
+
+### High-Energy Pop
+
+![High-Energy Pop recommendations](docs/high-energy-pop.svg)
+
+### Chill Lofi
+
+![Chill Lofi recommendations](docs/chill-lofi.svg)
+
+### Deep Intense Rock
+
+![Deep Intense Rock recommendations](docs/deep-intense-rock.svg)
+
+### Conflicted Edge Case
+
+![Conflicted edge-case recommendations](docs/conflicted-edge-case.svg)
+
+### Energy-Heavy Experiment
+
+![High-Energy Pop experiment recommendations](docs/high-energy-pop-energy-heavy-experiment.svg)
 
 ---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
-
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+This recommender still works on a tiny, hand-built catalog, so it can only be as good as the labels and examples in `songs.csv`. It also treats genre labels as exact matches, which means a song tagged `indie pop` is not counted as a `pop` match even if it feels close to the same audience. The evaluation runs also showed that high-energy songs can rise too easily when a profile is contradictory, so the system can accidentally favor intensity over the user's broader vibe.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+My biggest takeaway is that recommenders do not really "understand" songs the way people do. They turn a small set of labels and numbers into a score, and that score can look smart when the user profile is simple, but it can also break down fast when the preferences are mixed or contradictory. Seeing `Gym Hero` show up for both happy-pop and intense-rock listeners made it clear that a few heavily weighted features can shape a lot of the final ranking.
 
-[**Model Card**](model_card.md)
-
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+I also learned how easily bias can show up in a system that looks neutral on the surface. Exact genre matching treats `pop` and `indie pop` as completely different, while the energy score gives every song a chance to compete even if its overall vibe is wrong. With a small hand-built catalog like this one, the recommendations reflect the dataset designer's assumptions just as much as the user's taste.
 
 
 ---

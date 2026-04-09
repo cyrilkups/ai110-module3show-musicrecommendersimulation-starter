@@ -61,29 +61,13 @@ Prompts:
 
 ## 6. Limitations and Bias 
 
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+One weakness I found is that the recommender can be pulled too strongly by energy closeness, especially when a user has conflicting preferences. In my edge-case test, a profile asking for `classical`, `intense`, `0.95` energy, and acoustic sound still got `Gym Hero` and `Storm Runner` at the top because the model rewarded high energy and the `intense` mood even when the genre did not match. The exact-match genre rule also ignores near neighbors like `pop` and `indie pop`, so similar songs can lose points for small label differences. The catalog is also uneven, with only one rock song and one classical song, so users with niche tastes have fewer good options and may get pushed toward louder mainstream tracks. This creates a small filter bubble where certain combinations of energy and mood keep winning even when the overall vibe is not quite right.
 
 ---
 
 ## 7. Evaluation  
 
-How you checked whether the recommender behaved as expected. 
-
-Prompts:  
-
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
+I tested four user profiles: `High-Energy Pop`, `Chill Lofi`, `Deep Intense Rock`, and a `Conflicted Edge Case` that mixed classical genre with intense mood and very high energy. For each one, I looked at the top 5 recommendations and checked whether the titles felt like a believable match for the vibe in plain language, not just by the numbers. The strongest results were for `Chill Lofi`, where `Library Rain`, `Midnight Coding`, and `Focus Flow` all felt consistent with a calm, acoustic, low-energy study playlist. One surprise was that `Gym Hero` ranked second for the rock profile because its energy and mood matched so well that the pop genre penalty was not enough to push it down. I also ran an experiment that doubled energy weight and halved genre weight; this moved `Rooftop Lights` above `Gym Hero` for the high-energy pop profile, which made the list feel happier but less strict about genre identity.
 
 ---
 

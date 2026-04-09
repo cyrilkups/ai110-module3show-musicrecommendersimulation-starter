@@ -1,6 +1,14 @@
 import csv
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
+
+
+DEFAULT_SCORING_WEIGHTS = {
+    "genre": 2.0,
+    "mood": 1.5,
+    "energy": 2.0,
+    "acoustic": 0.5,
+}
 
 @dataclass
 class Song:
@@ -90,41 +98,56 @@ def load_songs(csv_path: str) -> List[Dict]:
     print(f"Loaded songs: {len(songs)}")
     return songs
 
-def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
+def score_song(
+    user_prefs: Dict,
+    song: Dict,
+    weights: Optional[Dict[str, float]] = None,
+) -> Tuple[float, List[str]]:
     """Score one song and explain the feature matches behind the score."""
     prefs = _normalize_user_prefs(user_prefs)
+    active_weights = _resolve_weights(weights)
     score = 0.0
     reasons = []
 
     if song["genre"] == prefs["favorite_genre"]:
-        score += 2.0
-        reasons.append("genre match (+2.0)")
+        genre_weight = active_weights["genre"]
+        score += genre_weight
+        reasons.append(f"genre match (+{genre_weight:.2f})")
 
     if song["mood"] == prefs["favorite_mood"]:
-        score += 1.5
-        reasons.append("mood match (+1.5)")
+        mood_weight = active_weights["mood"]
+        score += mood_weight
+        reasons.append(f"mood match (+{mood_weight:.2f})")
 
-    energy_score = max(0.0, 2.0 * (1 - abs(song["energy"] - prefs["target_energy"])))
+    energy_score = max(
+        0.0,
+        active_weights["energy"] * (1 - abs(song["energy"] - prefs["target_energy"])),
+    )
     score += energy_score
     reasons.append(f"energy closeness (+{energy_score:.2f})")
 
     acousticness = song["acousticness"]
     if prefs["likes_acoustic"]:
-        acoustic_score = 0.5 * acousticness
+        acoustic_score = active_weights["acoustic"] * acousticness
         reasons.append(f"acoustic preference (+{acoustic_score:.2f})")
     else:
-        acoustic_score = 0.5 * (1 - acousticness)
+        acoustic_score = active_weights["acoustic"] * (1 - acousticness)
         reasons.append(f"less-acoustic preference (+{acoustic_score:.2f})")
     score += acoustic_score
 
     return score, reasons
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
+def recommend_songs(
+    user_prefs: Dict,
+    songs: List[Dict],
+    k: int = 5,
+    weights: Optional[Dict[str, float]] = None,
+) -> List[Tuple[Dict, float, str]]:
     """Score the catalog, rank it, and return the top-k recommendations."""
     scored_recommendations = []
 
     for song in songs:
-        score, reasons = score_song(user_prefs, song)
+        score, reasons = score_song(user_prefs, song, weights=weights)
         explanation = "; ".join(reasons)
         scored_recommendations.append((song, score, explanation))
 
@@ -144,6 +167,14 @@ def _normalize_user_prefs(user_prefs: Dict) -> Dict:
         "target_energy": float(user_prefs.get("target_energy", user_prefs.get("energy", 0.5))),
         "likes_acoustic": bool(user_prefs.get("likes_acoustic", user_prefs.get("acousticness", True))),
     }
+
+
+def _resolve_weights(weights: Optional[Dict[str, float]]) -> Dict[str, float]:
+    """Merge any experimental weight overrides with the baseline recipe."""
+    active_weights = DEFAULT_SCORING_WEIGHTS.copy()
+    if weights:
+        active_weights.update(weights)
+    return active_weights
 
 
 def _song_to_dict(song: Song) -> Dict:
