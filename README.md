@@ -11,13 +11,13 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+My version expands the starter catalog from 10 songs to 18 songs and plans a transparent content-based recommender. It will compare each song's genre, mood, energy, and acousticness to one user taste profile, assign a score, and rank the strongest matches at the top.
 
 ---
 
 ## How The System Works
 
-Real-world recommendation systems usually combine many signals, then score and rank items by how well they match a person's current taste. My version is a much simpler content-based recommender: it looks at the attributes of each song, compares them to a user's taste profile, gives the song a similarity score, and then ranks all songs from best match to weakest match. It will prioritize strong matches on genre and mood first, then use energy, valence, danceability, acousticness, and tempo to fine-tune the "vibe" so the top results feel closer to what the user wants.
+Real-world recommendation systems often combine user behavior with item features, but this simulator focuses on the item side only. I expanded `data/songs.csv` to include more genres and moods, including hip hop, classical, country, EDM, folk, R&B, Latin, and metal, so the catalog has a wider range of vibes to compare. The dataset already includes the extra numeric features `danceability` and `acousticness`, which gives the simulation more depth even though the first scoring version will use the most interpretable signals.
 
 Features used in each `Song`:
 
@@ -35,6 +35,44 @@ Information stored in `UserProfile`:
 - `favorite_mood`
 - `target_energy`
 - `likes_acoustic`
+
+Example user profile:
+
+```python
+user_profile = {
+    "favorite_genre": "lofi",
+    "favorite_mood": "focused",
+    "target_energy": 0.40,
+    "likes_acoustic": True,
+}
+```
+
+This profile should be specific enough to separate "intense rock" from "chill lofi" because it combines a genre preference, a mood preference, an energy target, and a simple acoustic preference.
+
+Algorithm Recipe:
+
+1. Start every song at a score of `0.0`.
+2. Add `+2.0` points if the song's `genre` matches the user's `favorite_genre`.
+3. Add `+1.5` points if the song's `mood` matches the user's `favorite_mood`.
+4. Add up to `+2.0` points for energy closeness using `2.0 * (1 - abs(song.energy - user.target_energy))`.
+5. Add `+0.5` points if the user's acoustic preference matches the song:
+   if `likes_acoustic` is `True`, reward songs with higher `acousticness`; if it is `False`, reward songs with lower `acousticness`.
+6. Rank all songs by total score from highest to lowest and return the top `k`.
+
+This recipe keeps genre slightly more important than mood for musical identity, while energy closeness keeps the results from feeling too broad. Ranking matters because the system must score one song at a time and then sort the full list to decide which recommendations come first.
+
+```mermaid
+flowchart LR
+    A[User Preferences] --> C[Score One Song]
+    B[songs.csv Catalog] --> C
+    C --> D[Apply Genre Mood Energy and Acoustic Rules]
+    D --> E[Store Song With Score]
+    E --> F[Repeat For Every Song]
+    F --> G[Sort By Score]
+    G --> H[Return Top K Recommendations]
+```
+
+Potential bias note: this system might over-prioritize genre labels and miss great songs from a different genre that still match the same mood or energy. Because the catalog is small and the labels are hand-written, the recommendations will also reflect the assumptions and tastes of whoever created the dataset.
 
 ---
 
