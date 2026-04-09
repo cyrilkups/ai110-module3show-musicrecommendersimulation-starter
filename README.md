@@ -74,6 +74,10 @@ flowchart LR
 
 Potential bias note: this system might over-prioritize genre labels and miss great songs from a different genre that still match the same mood or energy. Because the catalog is small and the labels are hand-written, the recommendations will also reflect the assumptions and tastes of whoever created the dataset.
 
+Example CLI output for the default `pop/happy` profile:
+
+![CLI output screenshot](docs/cli-output.svg)
+
 ---
 
 ## Getting Started
