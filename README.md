@@ -17,17 +17,24 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommendation systems usually combine many signals, then score and rank items by how well they match a person's current taste. My version is a much simpler content-based recommender: it looks at the attributes of each song, compares them to a user's taste profile, gives the song a similarity score, and then ranks all songs from best match to weakest match. It will prioritize strong matches on genre and mood first, then use energy, valence, danceability, acousticness, and tempo to fine-tune the "vibe" so the top results feel closer to what the user wants.
 
-Some prompts to answer:
+Features used in each `Song`:
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+- `genre`
+- `mood`
+- `energy`
+- `tempo_bpm`
+- `valence`
+- `danceability`
+- `acousticness`
 
-You can include a simple diagram or bullet list if helpful.
+Information stored in `UserProfile`:
+
+- `favorite_genre`
+- `favorite_mood`
+- `target_energy`
+- `likes_acoustic`
 
 ---
 
@@ -208,4 +215,3 @@ A few sentences about what you learned:
 - What surprised you about how your system behaved
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
-
