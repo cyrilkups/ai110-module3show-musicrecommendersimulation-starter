@@ -11,13 +11,41 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-My version expands the starter catalog from 10 songs to 18 songs and plans a transparent content-based recommender. It will compare each song's genre, mood, energy, and acousticness to one user taste profile, assign a score, and rank the strongest matches at the top.
+My version expands the starter catalog from 10 songs to 18 songs and implements a transparent content-based recommender. It compares each song to a user taste profile, scores both baseline and advanced attributes, supports multiple ranking modes, and reranks the final list for better diversity.
+
+---
+
+## Challenge Upgrades
+
+The current implementation now goes beyond the starter recommender in four important ways:
+
+- `data/songs.csv` includes 7 advanced attributes beyond the baseline fields:
+  `popularity`, `release_decade`, `mood_tags`, `instrumentalness`, `live_energy`, `lyrical_density`, and `era_affinity`
+- `src/recommender.py` uses math-based scoring rules for those features, including:
+  `popularity fit = weight * (1 - abs(song.popularity - target_popularity) / 100)`
+- release decade scoring rewards exact decade matches, gives a smaller bonus to neighboring decades, and still grants a tiny fallback score for out-of-era songs
+- mood tags reward overlap with the user's mood plus mode-specific bonus tags such as `nostalgic`, `party`, `focused`, or `euphoric`
+- three switchable ranking modes are included in addition to the default:
+  `genre_first`, `mood_first`, and `energy_focused`
+- a diversity-aware reranker subtracts penalties when the top list starts repeating the same artist or genre too often
+- `src/main.py` prints a readable ASCII table with the final score and the reasons behind each recommendation
+
+Useful commands:
+
+```bash
+python -m src.main
+python -m src.main genre_first
+python -m src.main mood_first
+python -m src.main energy_focused
+python -m src.main all
+python -m src.main balanced --no-diversity
+```
 
 ---
 
 ## How The System Works
 
-Real-world recommendation systems often combine user behavior with item features, but this simulator focuses on the item side only. I expanded `data/songs.csv` to include more genres and moods, including hip hop, classical, country, EDM, folk, R&B, Latin, and metal, so the catalog has a wider range of vibes to compare. The dataset already includes the extra numeric features `danceability` and `acousticness`, which gives the simulation more depth even though the first scoring version will use the most interpretable signals.
+Real-world recommendation systems often combine user behavior with item features, but this simulator focuses on the item side only. I expanded `data/songs.csv` to include more genres and moods, including hip hop, classical, country, EDM, folk, R&B, Latin, and metal, so the catalog has a wider range of vibes to compare. The current recommender uses both the original numeric fields and the newer advanced fields so different scoring modes can emphasize era, popularity, instrumentation, live feel, or detailed mood tags.
 
 Features used in each `Song`:
 
@@ -49,7 +77,7 @@ user_profile = {
 
 This profile should be specific enough to separate "intense rock" from "chill lofi" because it combines a genre preference, a mood preference, an energy target, and a simple acoustic preference.
 
-Algorithm Recipe:
+Core Scoring Recipe:
 
 1. Start every song at a score of `0.0`.
 2. Add `+2.0` points if the song's `genre` matches the user's `favorite_genre`.
@@ -57,9 +85,11 @@ Algorithm Recipe:
 4. Add up to `+2.0` points for energy closeness using `2.0 * (1 - abs(song.energy - user.target_energy))`.
 5. Add `+0.5` points if the user's acoustic preference matches the song:
    if `likes_acoustic` is `True`, reward songs with higher `acousticness`; if it is `False`, reward songs with lower `acousticness`.
-6. Rank all songs by total score from highest to lowest and return the top `k`.
+6. Add mode-specific bonuses for advanced features such as popularity fit, release decade, mood tag overlap, instrumentalness, live energy, lyrical density, and era affinity.
+7. If diversity mode is on, reduce the score of songs whose artist or genre already appears in the selected top results.
+8. Rank all songs by total score from highest to lowest and return the top `k`.
 
-This recipe keeps genre slightly more important than mood for musical identity, while energy closeness keeps the results from feeling too broad. Ranking matters because the system must score one song at a time and then sort the full list to decide which recommendations come first.
+This recipe keeps the simple content-based logic understandable while still making room for richer behavior. The different modes mainly change the weights and targets for those advanced signals, which lets the same catalog behave more like a genre-first, mood-first, or energy-first recommender.
 
 ```mermaid
 flowchart LR
@@ -112,6 +142,66 @@ pytest
 ```
 
 You can add more tests in `tests/test_recommender.py`.
+
+---
+
+## AI Prompt Pack
+
+These prompts match the implementation in this repo and can be reused as evidence of the AI-assisted workflow for the four challenge tasks.
+
+### Agent Mode Prompt for Challenge 1
+
+```text
+Open #file:data/songs.csv and #file:src/recommender.py.
+Expand the dataset with at least 5 advanced song attributes that are not in the baseline starter data. Use fields like popularity (0-100), release_decade, detailed mood_tags, instrumentalness, live_energy, and lyrical_density.
+
+Then update the scoring logic so each new attribute contributes through explicit math-based rules, not vague heuristics. Examples:
+- popularity fit = weight * (1 - abs(song.popularity - target_popularity) / 100)
+- decade bonus = full weight for preferred decades, partial weight for neighboring decades
+- mood tag bonus = reward overlap between song tags and preferred tags like nostalgic, euphoric, aggressive, focused
+
+Keep the code modular, return human-readable reasons for each score contribution, and make sure the recommender still returns the top-k ranked songs.
+```
+
+### Copilot Chat Prompt for Challenge 2
+
+```text
+Using #file:src/recommender.py, help me refactor this recommender so users can switch between multiple scoring modes from main.py.
+I want at least these modes: balanced, genre_first, mood_first, and energy_focused.
+
+Please suggest a simple Strategy-pattern-style design that keeps each mode modular without overengineering the project. I need:
+- a clean place to store each mode's weights and target values
+- a mode normalization helper
+- a way for main.py to expose the available modes
+- minimal code duplication in score_song and recommend_songs
+```
+
+### Inline Chat Prompt for Challenge 3
+
+```text
+Add a diversity penalty during reranking.
+After the highest-scoring song is chosen, penalize later songs if their artist already appears in the selected recommendations list. Also add a smaller penalty for repeated genres.
+
+Please implement this as a score adjustment such as:
+- adjusted_score = base_score - (artist_penalty * repeated_artist_count) - (genre_penalty * repeated_genre_count)
+
+Keep the original score explanation, append the penalty reasons, and make sure the final top-k list spreads out repeated artists when possible.
+```
+
+### Copilot Chat Prompt for Challenge 4
+
+```text
+Using #file:src/main.py, suggest a clean way to print the top recommendations as a terminal table.
+You can use tabulate or simple ASCII formatting, but the output must include:
+- rank
+- song title
+- artist
+- genre
+- final score
+- reasons for the score
+
+Please keep long reason strings readable by wrapping them across multiple lines instead of truncating them.
+```
 
 ---
 
